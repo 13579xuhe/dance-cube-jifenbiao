@@ -36,6 +36,26 @@
         </div>
     </div>
 
+    <!-- 在选手签到页面的已签到选手卡片前添加Excel导入卡片 -->
+    <div class="card">
+        <h3 class="card-title"><i class="fas fa-file-excel"></i> Excel批量导入</h3>
+        <div class="form-group">
+            <div class="input-field">
+                <input type="file" id="excel-file" accept=".xlsx, .xls" style="color: #94a3b8;">
+                <div id="file-error" class="error"></div>
+            </div>
+            <button class="btn btn-success" onclick="importFromExcel()">
+                <i class="fas fa-file-import"></i> 导入Excel
+            </button>
+            <button class="btn btn-info" onclick="downloadTemplate()">
+                <i class="fas fa-download"></i> 下载模板
+            </button>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 10px;">
+            提示：Excel文件应包含"选手ID"和"选手昵称"两列，第一行为标题行
+        </p>
+    </div>
+
     <!-- 选手签到 -->
     <div id="signup" class="tab-content active">
         <!-- 内容保持不变 -->

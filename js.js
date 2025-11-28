@@ -735,3 +735,164 @@ function exportResults() {
     XLSX.writeFile(wb, fileName);
     alert('比赛结果已成功导出为Excel文件！');
 }
+
+// 下载Excel模板
+function downloadTemplate() {
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+
+    // 创建模板数据
+    const templateData = [
+        { '选手ID': '123456', '选手昵称': '示例选手1' },
+        { '选手ID': '234567', '选手昵称': '示例选手2' },
+        { '选手ID': '345678', '选手昵称': '示例选手3' }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    XLSX.utils.book_append_sheet(wb, ws, '选手信息模板');
+
+    // 导出文件
+    XLSX.writeFile(wb, '舞立方选手导入模板.xlsx');
+    alert('模板文件已下载，请按照模板格式填写选手信息！');
+}
+
+// 从Excel导入选手
+function importFromExcel() {
+    const fileInput = document.getElementById('excel-file');
+    const errorElement = document.getElementById('file-error');
+
+    if (!fileInput.files.length) {
+        errorElement.textContent = '请选择Excel文件';
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+
+            // 获取第一个工作表
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+
+            // 将工作表转换为JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            if (jsonData.length === 0) {
+                errorElement.textContent = 'Excel文件中没有数据';
+                return;
+            }
+
+            let importedCount = 0;
+            let duplicateCount = 0;
+            let errorCount = 0;
+
+            jsonData.forEach((row, index) => {
+                // 检查必要的列是否存在
+                if (!row['选手ID'] || !row['选手昵称']) {
+                    console.warn(`第${index + 2}行数据不完整，跳过`);
+                    errorCount++;
+                    return;
+                }
+
+                const id = row['选手ID'].toString().trim();
+                const name = row['选手昵称'].toString().trim();
+
+                // 验证ID是否为数字
+                if (!/^\d+$/.test(id)) {
+                    console.warn(`第${index + 2}行ID格式错误: ${id}`);
+                    errorCount++;
+                    return;
+                }
+
+                // 检查是否已存在相同ID
+                if (players.some(player => player.id === id)) {
+                    console.warn(`第${index + 2}行ID已存在: ${id}`);
+                    duplicateCount++;
+                    return;
+                }
+
+                // 添加选手
+                const player = {
+                    id: id,
+                    name: name,
+                    round1: {
+                        song1: null,
+                        song2: null,
+                        total: null,
+                        rank: null
+                    },
+                    round2: {
+                        song1: null,
+                        song2: null,
+                        song3: null,
+                        total: null,
+                        rank: null
+                    },
+                    round3: {
+                        song: null,
+                        perfect: null,
+                        total: null,
+                        rank: null
+                    },
+                    final: {
+                        song1: null,
+                        song2: null,
+                        total: null,
+                        rank: null
+                    }
+                };
+
+                players.push(player);
+                importedCount++;
+            });
+
+            // 更新签到表
+            updateSignupTable();
+
+            // 清空文件输入
+            fileInput.value = '';
+            errorElement.textContent = '';
+
+            // 显示导入结果
+            let message = `导入完成！成功导入 ${importedCount} 名选手`;
+            if (duplicateCount > 0) {
+                message += `，跳过 ${duplicateCount} 个重复ID`;
+            }
+            if (errorCount > 0) {
+                message += `，${errorCount} 行数据格式错误`;
+            }
+
+            alert(message);
+            saveData();
+
+        } catch (error) {
+            console.error('Excel导入错误:', error);
+            errorElement.textContent = '文件读取失败，请检查文件格式';
+        }
+    };
+
+    reader.onerror = function() {
+        errorElement.textContent = '文件读取失败';
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+// 增强的输入验证函数，确保ID为数字
+function validateNumberInput(input) {
+    const errorElement = document.getElementById('id-error');
+    const originalValue = input.value;
+
+    // 移除非数字字符
+    input.value = input.value.replace(/[^\d]/g, '');
+
+    if (input.value !== originalValue) {
+        errorElement.textContent = 'ID只能包含数字';
+    } else {
+        errorElement.textContent = '';
+    }
+}
